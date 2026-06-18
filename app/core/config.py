@@ -8,11 +8,11 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Team Task Manager"
     VERSION: str = "1.0.0"
 
-    DB_USER: str
-    DB_PASSWORD: str
-    DB_NAME: str
-    DB_HOST: str
-    DB_PORT: int = 5432
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_NAME: str
+    POSTGRES_HOST: str
+    POSTGRES_PORT: int = 5432
     DATABASE_URL: str | None = None
 
     SECRET_KEY: str
