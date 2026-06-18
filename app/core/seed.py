@@ -21,7 +21,7 @@ async def seed_data():
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with async_session() as session:
-        result = await session.execute(select(User).where(User.email == "demo@example.com"))
+        result = await session.execute(select(User).where(User.email == "owner@example.com"))
         if result.scalar_one_or_none():
             logger.info("Демо-данные уже существуют в базе данных. Пропуск.")
             return
