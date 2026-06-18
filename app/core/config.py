@@ -2,6 +2,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """App configured settings"""
+
     PROJECT_NAME: str = "Team Task Manager"
     VERSION: str = "1.0.0"
 
@@ -27,6 +29,7 @@ class Settings(BaseSettings):
     MINIO_ROOT_USER: str | None = None
     MINIO_ROOT_PASSWORD: str | None = None
     MINIO_BUCKET_NAME: str | None = None
+    MINIO_REGION_NAME: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

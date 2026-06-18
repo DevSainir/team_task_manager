@@ -7,13 +7,30 @@ from app.schemas.user import UserCreateIn, UserOut
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=UserOut,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        201: {"description": "User successfully registered."},
+        400: {"description": "User with this email already exists."},
+        422: {"description": "Validation error."},
+    },
+)
 async def register(payload: UserCreateIn, auth_service: AuthSvc):
     """Register a new user account."""
     return await auth_service.register_user(payload)
 
 
-@router.post("/login", response_model=TokenOut, status_code=status.HTTP_200_OK)
+@router.post(
+    "/login",
+    response_model=TokenOut,
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "Success authorization. Token set into cookies."},
+        401: {"description": "Email or password is incorrect."},
+    },
+)
 async def login(payload: UserLoginIn, response: Response, auth_service: AuthSvc):
     """Authenticate user, set httpOnly cookie, and return access token."""
     user = await auth_service.authenticate_user(payload)
@@ -31,7 +48,16 @@ async def login(payload: UserLoginIn, response: Response, auth_service: AuthSvc)
     return TokenOut(access_token=access_token)
 
 
-@router.post("/refresh", response_model=TokenOut, status_code=status.HTTP_200_OK)
+@router.post(
+    "/refresh",
+    response_model=TokenOut,
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "Access token successfully refreshed."},
+        401: {"description": "Refresh token is invalid, expired, or missing."},
+        422: {"description": "Validation error."},
+    },
+)
 async def refresh(
     response: Response,
     auth_service: AuthSvc,
@@ -56,7 +82,14 @@ async def refresh(
     return TokenOut(access_token=new_access)
 
 
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@router.post(
+    "/logout",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        200: {"description": "Successfully logged out. Refresh token cookie cleared."},
+        401: {"description": "User is not authenticated."},
+    },
+)
 async def logout(
     response: Response,
     auth_service: AuthSvc,

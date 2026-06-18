@@ -27,6 +27,7 @@ http_bearer = HTTPBearer()
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+    """Dependency provider for AsyncSession."""
     async with async_session_maker() as session:
         yield session
 
@@ -36,22 +37,27 @@ S3Dep = Annotated[S3Client, Depends(get_s3_client)]
 
 
 def get_user_repo(session: SessionDep) -> UserRepo:
+    """Dependency provider for UserRepo."""
     return UserRepo(session)
 
 
 def get_auth_repo(session: SessionDep) -> AuthRepo:
+    """Dependency provider for AuthRepo."""
     return AuthRepo(session)
 
 
 def get_board_repo(session: SessionDep) -> BoardRepo:
+    """Dependency provider for BoardRepo."""
     return BoardRepo(session)
 
 
 def get_column_repo(session: SessionDep) -> ColumnRepo:
+    """Dependency provider for ColumnRepo."""
     return ColumnRepo(session)
 
 
 def get_task_repo(session: SessionDep) -> TaskRepo:
+    """Dependency provider for TaskRepo."""
     return TaskRepo(session)
 
 
@@ -111,6 +117,7 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(http_bearer),
     user_repo: UserRepo = Depends(get_user_repo),
 ) -> User:
+    """Dependency provider for receiving current user and checking access."""
     token = credentials.credentials
     try:
         payload = security.decode_token(token)

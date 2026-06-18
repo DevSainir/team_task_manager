@@ -23,8 +23,9 @@ async def health_check() -> dict[str, str]:
 
 @app.get("/redoc", include_in_schema=False)
 async def redoc_html():
+    """Represent static docs of the application."""
     return get_redoc_html(
-        openapi_url=app.openapi_url,
-        title=app.title + " - ReDoc",
-        redoc_js_url="https://unpkg.com/redoc@next/bundles/redoc.standalone.js",
+        openapi_url="/openapi.json",
+        title="Team Task Manager - ReDoc",
+        redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@2.1.3/bundles/redoc.standalone.js",
     )

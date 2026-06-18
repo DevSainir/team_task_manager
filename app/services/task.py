@@ -39,7 +39,7 @@ class TaskService:
     async def _verify_assignee(
         self, assignee_id: uuid.UUID, column_id: uuid.UUID, current_user_id: uuid.UUID
     ) -> None:
-        """Проверяет, является ли assignee участником доски."""
+        """Check if assignee is a member of the board."""
         column = await self.column_repo.get_by_id(column_id)
         board = await self.board_service.get_board(column.board_id, current_user_id)
 
@@ -51,7 +51,7 @@ class TaskService:
             )
 
     def _enrich_task(self, task: Task) -> TaskOut:
-        """Превращает массив ключей в массив ссылок."""
+        """Helper to enrich task with attachments presigned S3 urls."""
         task_out = TaskOut.model_validate(task)
         if task_out.attachment_urls:
             task_out.attachment_urls = [
@@ -60,6 +60,7 @@ class TaskService:
         return task_out
 
     async def get_task(self, task_id: uuid.UUID, user_id: uuid.UUID) -> Task:
+        """Retrieve a task and verify access."""
         task = await self.task_repo.get_by_id(task_id)
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
@@ -153,6 +154,7 @@ class TaskService:
     async def upload_attachment(
         self, task_id: uuid.UUID, user_id: uuid.UUID, file: UploadFile
     ) -> TaskOut:
+        """Upload files to S3 and save key to database"""
         task = await self.get_task(task_id, user_id)
 
         file_key = await self.s3_client.upload_file(file, "tasks", str(task_id))
@@ -169,6 +171,7 @@ class TaskService:
     async def delete_attachment(
         self, task_id: uuid.UUID, user_id: uuid.UUID, url_to_delete: str
     ) -> TaskOut:
+        """Remove attachments from S3 and clear file key in database"""
         task = await self.get_task(task_id, user_id)
 
         target_key = None

@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
 
 class User(Base, TimeStampMixin, ActiveMixin, UUIDMixin):
+    """Database model representing a user."""
+
     __tablename__ = "users"
 
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)

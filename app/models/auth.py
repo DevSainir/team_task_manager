@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
 
 class RefreshSession(Base, UUIDMixin):
+    """Database model representing a refresh session."""
+
     __tablename__ = "refresh_sessions"
 
     user_id: Mapped[uuid.UUID] = mapped_column(

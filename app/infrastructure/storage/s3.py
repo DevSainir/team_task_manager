@@ -10,13 +10,13 @@ from app.core.config import settings
 
 
 class S3Client:
-    """Инфраструктурный клиент для работы с AWS S3 / MinIO."""
+    """S3 client for AWS/minIO"""
 
     def __init__(self):
         if settings.S3_ENDPOINT_URL:
             access_key = settings.MINIO_ROOT_USER
             secret_key = settings.MINIO_ROOT_PASSWORD
-            region = "us-east-1"
+            region = settings.MINIO_REGION_NAME
             self.bucket_name = settings.MINIO_BUCKET_NAME
         else:
             access_key = settings.AWS_ACCESS_KEY_ID
@@ -41,7 +41,7 @@ class S3Client:
         )
 
     async def upload_file(self, file: UploadFile, folder: str, entity_id: str) -> str:
-        """Асинхронная загрузка. Возвращает КЛЮЧ файла (например: avatars/123/uuid.jpg)."""
+        """Asynchronous uploading. Returns file key."""
         file_extension = file.filename.split(".")[-1]
         unique_id = str(uuid.uuid4())
         file_key = f"{folder}/{entity_id}/{unique_id}.{file_extension}"
@@ -60,7 +60,7 @@ class S3Client:
         self.s3_client.delete_object(Bucket=self.bucket_name, Key=file_key)
 
     async def delete_file(self, file_key: str) -> None:
-        """Физическое удаление файла из бакета."""
+        """Deleting file from S3 bucket"""
         if file_key:
             try:
                 await asyncio.to_thread(self._delete_sync, file_key)
@@ -68,7 +68,7 @@ class S3Client:
                 pass
 
     def generate_presigned_url(self, file_key: str, expires_in: int = 3600) -> str:
-        """Динамическая генерация временной ссылки."""
+        """Dynamic generation of presigned url"""
         if not file_key:
             return ""
         if file_key.startswith("http"):

@@ -7,6 +7,8 @@ from app.models.auth import RefreshSession
 
 
 class AuthRepo:
+    """Repository for handling authentication database operations."""
+
     def __init__(self, session: AsyncSession):
         self.session = session
 

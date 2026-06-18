@@ -40,13 +40,13 @@ class BoardService:
 
     @staticmethod
     def _enrich_board_list(board: Board, user_id: uuid.UUID) -> BoardListOut:
-        """Хелпер: собирает Pydantic-объект для элемента списка досок."""
+        """Helper to enrich board list element"""
         board_out = BoardListOut.model_validate(board)
         board_out.role = "owner" if board.owner_id == user_id else "member"
         return board_out
 
     def _enrich_detailed_board(self, board: Board) -> BoardDetailOut:
-        """Хелпер: собирает глубокое Pydantic-дерево и генерирует S3 ссылки."""
+        """Helper to enrich board element with members, columns, tasks and presigned S3 urls"""
         board_out = BoardDetailOut.model_validate(board)
 
         for member in board_out.members:

@@ -8,13 +8,29 @@ from app.schemas.board import BoardCreateIn, BoardDetailOut, BoardListOut, Board
 router = APIRouter(prefix="/boards", tags=["Boards"])
 
 
-@router.post("", response_model=BoardOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=BoardOut,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        201: {"description": "Board successfully created with default columns."},
+        401: {"description": "User is not authenticated."},
+    },
+)
 async def create_board(payload: BoardCreateIn, current_user: CurrentUser, board_service: BoardSvc):
     """Create a new board (automatically generates default columns)."""
     return await board_service.create_board(payload, current_user.id)
 
 
-@router.get("", response_model=list[BoardListOut], status_code=status.HTTP_200_OK)
+@router.get(
+    "",
+    response_model=list[BoardListOut],
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "Paginated list of user's boards successfully retrieved."},
+        401: {"description": "User is not authenticated."},
+    },
+)
 async def get_my_boards(
     current_user: CurrentUser,
     board_service: BoardSvc,
@@ -25,13 +41,32 @@ async def get_my_boards(
     return await board_service.get_user_boards(current_user.id, limit, offset)
 
 
-@router.get("/{board_id}", response_model=BoardDetailOut, status_code=status.HTTP_200_OK)
+@router.get(
+    "/{board_id}",
+    response_model=BoardDetailOut,
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "Detailed board structure with columns, tasks and members."},
+        403: {"description": "Access denied. User is not owner or member."},
+        404: {"description": "Board is not found."},
+    },
+)
 async def get_board(board_id: uuid.UUID, current_user: CurrentUser, board_service: BoardSvc):
     """Retrieve detailed board info (includes columns, tasks, and members)."""
     return await board_service.get_detailed_board(board_id, current_user.id)
 
 
-@router.post("/{board_id}/invite", response_model=BoardOut, status_code=status.HTTP_200_OK)
+@router.post(
+    "/{board_id}/invite",
+    response_model=BoardOut,
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "User successfully invited and added to the board members."},
+        400: {"description": "User is already a member of this board."},
+        403: {"description": "Access denied. Only the board owner can invite members."},
+        404: {"description": "Board or invited user not found."},
+    },
+)
 async def invite_member(
     board_id: uuid.UUID,
     current_user: CurrentUser,
@@ -42,7 +77,16 @@ async def invite_member(
     return await board_service.invite_member(board_id, email, current_user.id)
 
 
-@router.delete("/{board_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{board_id}/members/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        204: {"description": "Member successfully removed, or user successfully left the board."},
+        400: {"description": "The owner cannot leave the board. Delete the board instead."},
+        403: {"description": "Access denied. Not enough permissions to remove this user."},
+        404: {"description": "Board or member not found."},
+    },
+)
 async def remove_member(
     board_id: uuid.UUID, current_user: CurrentUser, board_service: BoardSvc, user_id: uuid.UUID
 ):
@@ -50,7 +94,16 @@ async def remove_member(
     return await board_service.remove_member(board_id, user_id, current_user.id)
 
 
-@router.patch("/{board_id}", response_model=BoardOut, status_code=status.HTTP_200_OK)
+@router.patch(
+    "/{board_id}",
+    response_model=BoardOut,
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "Board information successfully updated."},
+        403: {"description": "Only owner can update settings."},
+        404: {"description": "Board is not found."},
+    },
+)
 async def update_board(
     board_id: uuid.UUID, payload: BoardUpdateIn, current_user: CurrentUser, board_service: BoardSvc
 ):
@@ -58,7 +111,16 @@ async def update_board(
     return await board_service.update_board(board_id, payload, current_user.id)
 
 
-@router.delete("/{board_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{board_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        204: {
+            "description": "Board successfully deleted with cascade deletion of columns and tasks."
+        },
+        403: {"description": "Only owner can delete the board."},
+    },
+)
 async def delete_board(board_id: uuid.UUID, current_user: CurrentUser, board_service: BoardSvc):
     """Delete a board and all its content."""
     await board_service.delete_board(board_id, current_user.id)

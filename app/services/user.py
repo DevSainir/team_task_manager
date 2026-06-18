@@ -17,7 +17,7 @@ class UserService:
         self.s3_client = s3_client
 
     def _enrich_user(self, user: User) -> UserOut:
-        """DRY-хелпер: превращает ORM-объект в Pydantic и генерирует ссылки."""
+        """Helper to enrich user element with presigned S3 url."""
         user_out = UserOut.model_validate(user)
 
         if user_out.avatar_url:
@@ -48,7 +48,7 @@ class UserService:
         return self._enrich_user(user)
 
     async def upload_avatar(self, user_id: uuid.UUID, file: UploadFile) -> UserOut:
-        """Загрузка аватара."""
+        """Upload an avatar to S3 and save key in database."""
         user = await self.user_repo.get_by_id(user_id)
 
         if user.avatar_url:
@@ -62,6 +62,7 @@ class UserService:
         return self._enrich_user(user)
 
     async def delete_avatar(self, user_id: uuid.UUID) -> UserOut:
+        """Remove an avatar from S3 and clear file key in database"""
         user = await self.user_repo.get_by_id(user_id)
         if user.avatar_url:
             await self.s3_client.delete_file(user.avatar_url)
