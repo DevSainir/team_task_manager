@@ -20,7 +20,7 @@ from app.services.column import ColumnService
 from app.services.task import TaskService
 from app.services.user import UserService
 
-engine = create_async_engine(settings.database_url, echo=False)
+engine = create_async_engine(settings.DATABASE_URL, echo=False)
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 http_bearer = HTTPBearer()
