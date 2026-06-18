@@ -9,7 +9,6 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
-alembic.ini
 
 .idea/
 .vscode/
