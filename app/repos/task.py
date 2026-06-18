@@ -1,8 +1,9 @@
 import uuid
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models import Column
 from app.models.enums import PriorityEnum
 from app.models.task import Task
 
@@ -50,6 +51,17 @@ class TaskRepo:
         stmt = stmt.order_by(Task.position).limit(limit).offset(offset)
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+    async def clear_tasks_assignee(self, board_id: uuid.UUID, member_id: uuid.UUID) -> None:
+        stmt = (
+            update(Task)
+            .where(
+                Task.column_id.in_(select(Column.id).where(Column.board_id == board_id)),
+                Task.assignee_id == member_id,
+            )
+            .values(assignee_id=None)
+        )
+        await self.session.execute(stmt)
 
     async def delete(self, task_id: uuid.UUID) -> None:
         """Delete a task from the database."""

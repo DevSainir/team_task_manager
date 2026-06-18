@@ -201,5 +201,15 @@ class TaskService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
 
         await self._verify_column_access(task.column_id, user_id)
+
+        for key in task.attachment_urls:
+            await self.s3_client.delete_file(key)
+
         await self.task_repo.delete(task_id)
+
+        existing_tasks = await self.task_repo.get_filtered_tasks(task.column_id)
+        for t in existing_tasks:
+            if t.position > task.position:
+                t.position -= 1
+
         await self.task_repo.session.commit()

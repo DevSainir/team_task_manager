@@ -7,6 +7,7 @@ from app.models.board import Board
 from app.models.column import Column
 from app.repos.board import BoardRepo
 from app.repos.column import ColumnRepo
+from app.repos.task import TaskRepo
 from app.repos.user import UserRepo
 from app.schemas.board import BoardCreateIn, BoardDetailOut, BoardListOut, BoardUpdateIn
 
@@ -20,11 +21,13 @@ class BoardService:
         self,
         board_repo: BoardRepo,
         column_repo: ColumnRepo,
+        task_repo: TaskRepo,
         user_repo: UserRepo,
         s3_client: S3Client,
     ):
         self.board_repo = board_repo
         self.column_repo = column_repo
+        self.task_repo = task_repo
         self.user_repo = user_repo
         self.s3_client = s3_client
 
@@ -160,6 +163,7 @@ class BoardService:
             )
 
         board.members.remove(user_to_remove)
+        await self.task_repo.clear_tasks_assignee(board_id, user_id_to_remove)
         await self.board_repo.session.commit()
 
     async def update_board(

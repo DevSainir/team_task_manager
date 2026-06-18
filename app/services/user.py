@@ -74,5 +74,7 @@ class UserService:
     async def delete_user(self, user_id: uuid.UUID) -> None:
         """Remove a user and all related data."""
         await self.get_user_by_id(user_id)
+        user = await self.user_repo.get_by_id(user_id)
+        await self.s3_client.delete_file(user.avatar_url)
         await self.user_repo.delete(user_id)
         await self.user_repo.session.commit()

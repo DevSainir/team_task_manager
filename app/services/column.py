@@ -74,4 +74,10 @@ class ColumnService:
 
         await self.board_service.get_board(column.board_id, user_id)
         await self.column_repo.delete(column_id)
+
+        existing_columns = await self.column_repo.get_all_by_board(column.board_id)
+        for col in existing_columns:
+            if col.position > column.position:
+                col.position -= 1
+
         await self.column_repo.session.commit()

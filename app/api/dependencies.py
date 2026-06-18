@@ -79,12 +79,17 @@ def get_user_service(
 def get_board_service(
     board_repo: Annotated[BoardRepo, Depends(get_board_repo)],
     column_repo: Annotated[ColumnRepo, Depends(get_column_repo)],
+    task_repo: Annotated[TaskRepo, Depends(get_task_repo)],
     user_repo: Annotated[UserRepo, Depends(get_user_repo)],
     s3_client: S3Dep,
 ) -> BoardService:
     """Dependency provider for BoardService."""
     return BoardService(
-        board_repo=board_repo, column_repo=column_repo, user_repo=user_repo, s3_client=s3_client
+        board_repo=board_repo,
+        column_repo=column_repo,
+        task_repo=task_repo,
+        user_repo=user_repo,
+        s3_client=s3_client,
     )
 
 

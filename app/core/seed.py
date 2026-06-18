@@ -17,7 +17,7 @@ from app.models.user import User
 async def seed_data():
     """Script to seed db with demo data"""
     logger.info("Начинаем инициализацию демо-данных...")
-    engine = create_async_engine(settings.DATABASE_URL, echo=False)
+    engine = create_async_engine(settings.database_url, echo=False)
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with async_session() as session:
