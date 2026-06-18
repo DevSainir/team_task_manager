@@ -98,6 +98,7 @@ class AuthService:
 
         if session.is_used or session.expires_at < datetime.now(UTC):
             await self.auth_repo.delete_all_user_sessions(user_id)
+            await self.auth_repo.session.commit()
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token compromised or expired. Sessions terminated.",
