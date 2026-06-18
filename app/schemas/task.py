@@ -6,9 +6,6 @@ from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
 from app.models.enums import PriorityEnum
 
-TitleStr = Annotated[str, Field(min_length=1, max_length=255)]
-PositionInt = Annotated[int, Field(ge=0)]
-
 
 def empty_to_none(v: str | uuid.UUID | None) -> uuid.UUID | None:
     if v == "":
@@ -17,6 +14,8 @@ def empty_to_none(v: str | uuid.UUID | None) -> uuid.UUID | None:
 
 
 AssigneeId = Annotated[uuid.UUID | None, BeforeValidator(empty_to_none)]
+TitleStr = Annotated[str, Field(min_length=1, max_length=255)]
+PositionInt = Annotated[int, Field(ge=0)]
 
 
 class TaskBase(BaseModel):

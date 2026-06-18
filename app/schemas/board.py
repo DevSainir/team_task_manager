@@ -49,4 +49,4 @@ class BoardDetailOut(BoardOut):
 class BoardListOut(BoardOut):
     """Schema for returning board list with user role."""
 
-    role: str
+    role: str = "member"

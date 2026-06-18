@@ -22,7 +22,6 @@ class UserUpdateIn(BaseModel):
     """Schema for updating an existing User."""
 
     full_name: str | None = Field(default=None, min_length=2, max_length=100)
-    # avatar_url: str | None = None
     is_active: bool | None = None
     password: str | None = Field(default=None, min_length=8, max_length=128)
 

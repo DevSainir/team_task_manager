@@ -25,5 +25,35 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
+  minio:
+    image: minio/minio:latest
+    profiles: ["local"]
+    container_name: task_manager_s3
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    env_file:
+      - .env
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+  minio-init:
+    image: minio/mc:latest
+    profiles: ["local"]
+    env_file:
+      - .env
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 3;
+      /usr/bin/mc alias set myminio http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+      /usr/bin/mc mb myminio/$${MINIO_BUCKET_NAME};
+      /usr/bin/mc anonymous set download myminio/$${MINIO_BUCKET_NAME};
+      exit 0;
+      "
+
 volumes:
   postgres_data:
+  minio_data:

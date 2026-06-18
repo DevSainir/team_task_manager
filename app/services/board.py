@@ -2,12 +2,13 @@ import uuid
 
 from fastapi import HTTPException, status
 
+from app.infrastructure.storage.s3 import S3Client
 from app.models.board import Board
 from app.models.column import Column
 from app.repos.board import BoardRepo
 from app.repos.column import ColumnRepo
 from app.repos.user import UserRepo
-from app.schemas.board import BoardCreateIn, BoardDetailOut, BoardOut, BoardUpdateIn
+from app.schemas.board import BoardCreateIn, BoardDetailOut, BoardListOut, BoardUpdateIn
 
 
 class BoardService:
@@ -15,10 +16,17 @@ class BoardService:
 
     DEFAULT_COLUMNS = ["To Do", "In Progress", "Done"]
 
-    def __init__(self, board_repo: BoardRepo, column_repo: ColumnRepo, user_repo: UserRepo):
+    def __init__(
+        self,
+        board_repo: BoardRepo,
+        column_repo: ColumnRepo,
+        user_repo: UserRepo,
+        s3_client: S3Client,
+    ):
         self.board_repo = board_repo
         self.column_repo = column_repo
         self.user_repo = user_repo
+        self.s3_client = s3_client
 
     @staticmethod
     def _check_user_access(board: Board, user_id: uuid.UUID) -> None:
@@ -29,6 +37,31 @@ class BoardService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Access denied to this board"
             )
+
+    @staticmethod
+    def _enrich_board_list(board: Board, user_id: uuid.UUID) -> BoardListOut:
+        """Хелпер: собирает Pydantic-объект для элемента списка досок."""
+        board_out = BoardListOut.model_validate(board)
+        board_out.role = "owner" if board.owner_id == user_id else "member"
+        return board_out
+
+    def _enrich_detailed_board(self, board: Board) -> BoardDetailOut:
+        """Хелпер: собирает глубокое Pydantic-дерево и генерирует S3 ссылки."""
+        board_out = BoardDetailOut.model_validate(board)
+
+        for member in board_out.members:
+            member.role = "owner" if member.id == board.owner_id else "member"
+            if member.avatar_url:
+                member.avatar_url = self.s3_client.generate_presigned_url(member.avatar_url)
+
+        for col in board_out.columns:
+            for task in col.tasks:
+                if task.attachment_urls:
+                    task.attachment_urls = [
+                        self.s3_client.generate_presigned_url(k) for k in task.attachment_urls
+                    ]
+
+        return board_out
 
     async def create_board(self, payload: BoardCreateIn, owner_id: uuid.UUID) -> Board:
         """Create a new board and automatically generate default columns."""
@@ -47,15 +80,12 @@ class BoardService:
         await self.board_repo.session.refresh(created_board)
         return created_board
 
-    async def get_user_boards(self, user_id: uuid.UUID, limit: int, offset: int) -> list[dict]:
+    async def get_user_boards(
+        self, user_id: uuid.UUID, limit: int, offset: int
+    ) -> list[BoardListOut]:
         """Retrieve all boards available to the user (owned and joined)."""
         boards = await self.board_repo.get_all_by_user(user_id, limit, offset)
-        result = []
-        for board in boards:
-            board_dict = BoardOut.model_validate(board).model_dump()
-            board_dict["role"] = "owner" if board.owner_id == user_id else "member"
-            result.append(board_dict)
-        return result
+        return [self._enrich_board_list(board, user_id) for board in boards]
 
     async def get_board(self, board_id: uuid.UUID, user_id: uuid.UUID) -> Board:
         """Retrieve a board and verify access."""
@@ -63,29 +93,17 @@ class BoardService:
         if not board:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Board not found")
 
-        is_owner = board.owner_id == user_id
-        is_member = any(member.id == user_id for member in board.members)
-
-        if not (is_owner or is_member):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        self._check_user_access(board, user_id)
         return board
 
-    async def get_detailed_board(self, board_id: uuid.UUID, user_id: uuid.UUID) -> dict:
+    async def get_detailed_board(self, board_id: uuid.UUID, user_id: uuid.UUID) -> BoardDetailOut:
         """Retrieve a fully populated board and verify access."""
         board = await self.board_repo.get_detailed_by_id(board_id)
         if not board:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Board not found")
 
-        is_owner = board.owner_id == user_id
-        is_member = any(member.id == user_id for member in board.members)
-        if not (is_owner or is_member):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-
-        board_dict = BoardDetailOut.model_validate(board).model_dump()
-        for member in board_dict["members"]:
-            member["role"] = "owner" if member["id"] == board.owner_id else "member"
-
-        return board_dict
+        self._check_user_access(board, user_id)
+        return self._enrich_detailed_board(board)
 
     async def invite_member(
         self, board_id: uuid.UUID, email: str, current_user_id: uuid.UUID

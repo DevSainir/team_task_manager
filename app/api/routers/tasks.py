@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Body, Query, UploadFile, status
 
 from app.api.dependencies import CurrentUser, TaskSvc
 from app.models.enums import PriorityEnum
@@ -23,12 +23,13 @@ async def get_tasks(
     title: str | None = Query(None, description="Filter by title"),
     priority: PriorityEnum | None = Query(None, description="Filter by priority"),
     assignee_id: uuid.UUID | None = Query(None, description="Filter by assignee"),
+    tags: list[str] | None = Query(None, description="Filter by tags"),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
-    """Get tasks with filtering, sorting, and pagination[cite: 11]."""
+    """Get tasks with filtering, sorting, and pagination."""
     return await task_service.get_filtered_tasks(
-        column_id, current_user.id, title, priority, assignee_id, limit, offset
+        column_id, current_user.id, title, priority, assignee_id, tags, limit, offset
     )
 
 
@@ -38,6 +39,23 @@ async def update_task(
 ):
     """Update task details, assignment, or move to another column."""
     return await task_service.update_task(task_id, payload, current_user.id)
+
+
+@router.post("/{task_id}/attachments", response_model=TaskOut, status_code=status.HTTP_200_OK)
+async def upload_task_attachment(
+    task_id: uuid.UUID, file: UploadFile, current_user: CurrentUser, task_service: TaskSvc
+):
+    return await task_service.upload_attachment(task_id, current_user.id, file)
+
+
+@router.delete("/{task_id}/attachments", response_model=TaskOut, status_code=status.HTTP_200_OK)
+async def delete_task_attachment(
+    task_id: uuid.UUID,
+    current_user: CurrentUser,
+    task_service: TaskSvc,
+    url: str = Body(..., embed=True),
+):
+    return await task_service.delete_attachment(task_id, current_user.id, url)
 
 
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)

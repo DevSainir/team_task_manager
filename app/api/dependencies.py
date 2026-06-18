@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.core import security
 from app.core.config import settings
+from app.infrastructure.storage.s3 import S3Client, get_s3_client
 from app.models.user import User
 from app.repos.auth import AuthRepo
 from app.repos.board import BoardRepo
@@ -31,6 +32,7 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
+S3Dep = Annotated[S3Client, Depends(get_s3_client)]
 
 
 def get_user_repo(session: SessionDep) -> UserRepo:
@@ -61,18 +63,23 @@ def get_auth_service(
     return AuthService(user_repo=user_repo, auth_repo=auth_repo)
 
 
-def get_user_service(user_repo: Annotated[UserRepo, Depends(get_user_repo)]) -> UserService:
+def get_user_service(
+    user_repo: Annotated[UserRepo, Depends(get_user_repo)], s3_client: S3Dep
+) -> UserService:
     """Dependency provider for UserService."""
-    return UserService(user_repo=user_repo)
+    return UserService(user_repo=user_repo, s3_client=s3_client)
 
 
 def get_board_service(
     board_repo: Annotated[BoardRepo, Depends(get_board_repo)],
     column_repo: Annotated[ColumnRepo, Depends(get_column_repo)],
     user_repo: Annotated[UserRepo, Depends(get_user_repo)],
+    s3_client: S3Dep,
 ) -> BoardService:
     """Dependency provider for BoardService."""
-    return BoardService(board_repo=board_repo, column_repo=column_repo, user_repo=user_repo)
+    return BoardService(
+        board_repo=board_repo, column_repo=column_repo, user_repo=user_repo, s3_client=s3_client
+    )
 
 
 def get_column_service(
@@ -88,6 +95,7 @@ def get_task_service(
     task_repo: Annotated[TaskRepo, Depends(get_task_repo)],
     column_repo: Annotated[ColumnRepo, Depends(get_column_repo)],
     board_service: Annotated[BoardService, Depends(get_board_service)],
+    s3_client: S3Dep,
 ) -> TaskService:
     """Dependency provider for TaskService."""
     return TaskService(
@@ -95,6 +103,7 @@ def get_task_service(
         task_repo=task_repo,
         column_repo=column_repo,
         board_service=board_service,
+        s3_client=s3_client,
     )
 
 

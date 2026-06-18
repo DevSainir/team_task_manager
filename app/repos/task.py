@@ -31,6 +31,7 @@ class TaskRepo:
         title: str | None = None,
         priority: PriorityEnum | None = None,
         assignee_id: uuid.UUID | None = None,
+        tags: list[str] | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> list[Task]:
@@ -43,6 +44,8 @@ class TaskRepo:
             stmt = stmt.where(Task.priority == priority)
         if assignee_id:
             stmt = stmt.where(Task.assignee_id == assignee_id)
+        if tags:
+            stmt = stmt.where(Task.tags.contains(tags))
 
         stmt = stmt.order_by(Task.position).limit(limit).offset(offset)
         result = await self.session.execute(stmt)
