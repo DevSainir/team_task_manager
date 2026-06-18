@@ -22,7 +22,7 @@ class UserUpdateIn(BaseModel):
     """Schema for updating an existing User."""
 
     full_name: str | None = Field(default=None, min_length=2, max_length=100)
-    avatar_url: str | None = None
+    # avatar_url: str | None = None
     is_active: bool | None = None
     password: str | None = Field(default=None, min_length=8, max_length=128)
 
@@ -36,3 +36,9 @@ class UserOut(UserBase):
     avatar_url: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class UserWithRoleOut(UserOut):
+    """Schema for User with role."""
+
+    role: str = "member"

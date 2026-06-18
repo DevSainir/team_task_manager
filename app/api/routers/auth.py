@@ -1,23 +1,20 @@
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, HTTPException, Response, status
 
-from app.api.dependencies import get_auth_service
+from app.api.dependencies import AuthSvc
 from app.schemas.auth import TokenOut, UserLoginIn
 from app.schemas.user import UserCreateIn, UserOut
-from app.services.auth import AuthService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-async def register(payload: UserCreateIn, auth_service: AuthService = Depends(get_auth_service)):
+async def register(payload: UserCreateIn, auth_service: AuthSvc):
     """Register a new user account."""
     return await auth_service.register_user(payload)
 
 
 @router.post("/login", response_model=TokenOut, status_code=status.HTTP_200_OK)
-async def login(
-    payload: UserLoginIn, response: Response, auth_service: AuthService = Depends(get_auth_service)
-):
+async def login(payload: UserLoginIn, response: Response, auth_service: AuthSvc):
     """Authenticate user, set httpOnly cookie, and return access token."""
     user = await auth_service.authenticate_user(payload)
 
@@ -37,8 +34,8 @@ async def login(
 @router.post("/refresh", response_model=TokenOut, status_code=status.HTTP_200_OK)
 async def refresh(
     response: Response,
+    auth_service: AuthSvc,
     refresh_token: str | None = Cookie(default=None),
-    auth_service: AuthService = Depends(get_auth_service),
 ):
     """Refresh the access token and rotate the refresh token."""
     if not refresh_token:
@@ -62,8 +59,8 @@ async def refresh(
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
     response: Response,
+    auth_service: AuthSvc,
     refresh_token: str | None = Cookie(default=None),
-    auth_service: AuthService = Depends(get_auth_service),
 ):
     """Invalidate session in DB and clear cookie."""
     if refresh_token:

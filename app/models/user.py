@@ -7,6 +7,8 @@ from app.models.base import ActiveMixin, Base, TimeStampMixin, UUIDMixin
 
 if TYPE_CHECKING:
     from app.models.auth import RefreshSession
+    from app.models.board import Board
+    from app.models.task import Task
 
 
 class User(Base, TimeStampMixin, ActiveMixin, UUIDMixin):
@@ -21,3 +23,10 @@ class User(Base, TimeStampMixin, ActiveMixin, UUIDMixin):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    owned_boards: Mapped[list["Board"]] = relationship(
+        back_populates="owner", cascade="all, delete-orphan"
+    )
+    joined_boards: Mapped[list["Board"]] = relationship(
+        secondary="board_members", back_populates="members"
+    )
+    assigned_tasks: Mapped[list["Task"]] = relationship(back_populates="assignee")
